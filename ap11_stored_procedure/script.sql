@@ -275,13 +275,15 @@ $$
 -- END;
 -- $$
 
+-- CONFERIR VALOR DO V_COD_PEDIDO 
+SELECT * FROM tb_item_pedido -- 8
 
 DO $$
 DECLARE
     v_troco INT;
     v_valor_total INT;
     v_valor_a_pagar INT := 100;
-    v_cod_pedido INT := 8;
+    v_cod_pedido INT := 8; -- o de todo mundo esta 1, mas o meu é 8
 BEGIN
     CALL sp_calcular_valor_de_um_pedido(
         v_cod_pedido, 
