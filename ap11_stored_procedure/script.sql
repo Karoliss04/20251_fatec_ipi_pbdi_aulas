@@ -234,3 +234,85 @@ BEGIN
     INTO $2;
 END;
 $$
+
+
+-- COD DA AULA QUE FALTEI -- 20 / 05
+
+-- CREATE OR REPLACE PROCEDURE sp_calcular_troco(
+--     OUT p_troco INT,
+--     IN p_valor_a_pagar INT,
+--     IN p_valor_total INT
+-- ) LANGUAGE plpgsql
+-- AS $$
+-- BEGIN
+--     p_troco := p_valor_a_pagar - p_valor_total;
+-- END;
+-- $$
+
+-- CREATE OR REPLACE PROCEDURE sp_fechar_pedido(
+--     IN p_valor_a_pagar INT,
+--     IN p_cod_pedido INT
+-- )   LANGUAGE plpgsql
+-- AS $$
+-- DECLARE
+--     v_valor_total INT;
+-- BEGIN
+--     CALL sp_calcular_valor_de_um_pedido(
+--         p_cod_pedido,
+--         v_valor_total
+--     );
+--     IF p_valor_a_pagar < v_valor_total THEN
+--         RAISE NOTICE 'R$% insuficiente para pagar a conta de R$%',
+--         p_valor_a_pagar,
+--         v_valor_total;
+--     ELSE
+--         UPDATE tb_pedido p SET
+--         data_modificacao = CURRENT_TIMESTAMP,
+--         status = 'fechado'
+--         WHERE p.cod_pedido = p_cod_pedido;
+
+--     END IF;
+-- END;
+-- $$
+
+
+DO $$
+DECLARE
+    v_troco INT;
+    v_valor_total INT;
+    v_valor_a_pagar INT := 100;
+    v_cod_pedido INT := 8;
+BEGIN
+    CALL sp_calcular_valor_de_um_pedido(
+        v_cod_pedido, 
+        v_valor_total
+    );
+    CALL sp_calcular_troco(
+        v_troco,
+        v_valor_a_pagar,
+        v_valor_total
+    );
+    RAISE NOTICE
+        'A conta foi de R$% e você pagou R$%. Troco: R$%',
+        v_valor_total, v_valor_a_pagar, v_troco;
+END;
+$$
+
+DO $$
+DECLARE
+    v_cod_pedido INT := 8;
+BEGIN
+    CALL sp_fechar_pedido(200, v_cod_pedido);
+END;
+$$
+
+DO $$
+DECLARE
+    v_valor_total INT;
+    v_cod_pedido INT := 8;
+BEGIN 
+    CALL sp_calcular_valor_de_um_pedido(8, v_valor_total);
+    RAISE NOTICE 'Total do pedido %: R$%', v_cod_pedido, v_valor_total;
+END;
+$$
+
