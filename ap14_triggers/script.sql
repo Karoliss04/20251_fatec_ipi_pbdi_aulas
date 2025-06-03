@@ -138,3 +138,98 @@ SELECT * FROM tb_teste_trigger;
 UPDATE tb_teste_trigger SET texto='texto atualizado'
 WHERE cod_teste_trigger IN (2,3);
 
+-- DIA 03 . JUN . 2025
+
+CREATE TABLE IF NOT EXISTS tb_pessoa(
+    cod_pessoa SERIAL PRIMARY KEY,
+    nome VARCHAR(200) NOT NULL,
+    idade INT NOT NULL,
+    saldo NUMERIC(10,2) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS tb_auditoria(
+    cod_auditoria SERIAL PRIMARY KEY,
+    cod_pessoa INT NOT NULL,
+    idade INT NOT NULL,
+    saldo_antigo NUMERIC(10, 2),
+    saldo_atual NUMERIC(10,2)
+);
+
+CREATE OR REPLACE FUNCTION fn_validador_de_saldo()
+RETURNS TRIGGER 
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF NEW.saldo >= 0 THEN 
+        RETURN NEW;
+    ELSE
+        RAISE NOTICE 'Valor de saldor R$% inválido', NEW.saldo;
+        RETURN NULL;
+    END IF;
+END;
+$$
+
+CREATE TRIGGER tg_validador_de_saldo
+BEFORE INSERT OR UPDATE ON tb_pessoa
+FOR EACH ROW 
+EXECUTE PROCEDURE fn_validador_de_saldo()
+
+INSERT INTO tb_pessoa
+(nome, idade, saldo) VALUES
+('João', 20, 100),
+('Pedro', 22,-100),
+('Maria', 22, 400);
+
+SELECT * FROM tb_pessoa;
+
+CREATE OR REPLACE FUNCTION fn_log_pessoa_insert()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    INSERT INTO tb_auditoria
+    (cod_pessoa, nome, idade, saldo_antigo, saldo_atual)
+    VALUES
+    (NEW.cod_pessoa, NEW.nome, NEW.idade, NULL, NEW.saldo);
+    RETURN NULL;
+END;
+$$
+
+CREATE OR REPLACE TRIGGER tg_log_pessoa_insert
+AFTER INSERT ON tb_pessoa
+FOR EACH ROW
+    EXECUTE PROCEDURE fn_log_pessoa_insert()
+
+alter table tb_auditoria add COLUMN
+    if not exists nome varchar(200) not null;
+
+INSERT INTO tb_pessoa(nome, idade, saldo) VALUES
+('Ana', 20, 100),
+('Paula', 30, 200),
+('Isabela', 20, 500);
+
+SELECT * FROM tb_auditoria;
+
+CREATE OR REPLACE FUNCTION fn_log_pessoa_update()
+RETURNS TRIGGER
+LANGUAGE plpgsql 
+AS $$
+BEGIN
+    INSERT INTO tb_auditoria(
+        cod_pessoa, nome, idade, saldo_antigo, saldo_atual
+    ) 
+    VALUES(
+        NEW.cod_pessoa, NEW.nome, NEW.idade, OLD.saldo, NEW.saldo
+    );
+    RETURN NEW;
+END;
+$$
+
+UPDATE tb_pessoa
+SET saldo = 300
+WHERE cod_pessoa = 1
+
+CREATE OR REPLACE TRIGGER tg_log_pessoa_update
+AFTER UPDATE ON tb_pessoa
+FOR EACH ROW
+    EXECUTE PROCEDURE fn_log_pessoa_update();
